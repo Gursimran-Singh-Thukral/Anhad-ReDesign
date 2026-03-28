@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Security | Vynk Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #050505; --accent: #6366f1; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: white; padding: 80px 20px; min-height: 100vh; overflow-x: hidden; position: relative; }
+        
+        /* Animated Orbs */
+        body::before, body::after {
+            content: ''; position: fixed; width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+            filter: blur(90px); z-index: -1; animation: float 22s infinite alternate;
+        }
+        body::before { top: -150px; left: -150px; }
+        body::after { bottom: -150px; right: -150px; animation-delay: -7s; }
+
+        @keyframes float { from { transform: translate(0, 0); } to { transform: translate(120px, -120px); } }
+
+        #page-loader { position: fixed; inset: 0; background: var(--bg); z-index: 9999; transition: 0.8s ease; opacity: 1; pointer-events: none; }
+        body.loaded #page-loader { opacity: 0; }
+
+        .float-nav { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); padding: 12px 28px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); z-index: 2000; display: flex; gap: 24px; }
+        .float-nav a { color: #666; text-decoration: none; font-size: 14px; font-weight: 600; transition: 0.3s; }
+        .float-nav a:hover { color: white; }
+
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 60px; }
+        
+        .log-card { 
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px); 
+            padding: 28px; border-radius: 28px; display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 16px; transition: 0.7s cubic-bezier(0.6, -0.2, 0.2, 1.2); 
+        }
+        .log-card.slide-out { transform: translateX(180%) rotate(10deg); opacity: 0; }
+
+        .cb-container { position: relative; width: 30px; height: 30px; cursor: pointer; }
+        .cb-container input { display: none; }
+        .checkmark { position: absolute; inset: 0; background: rgba(255,255,255,0.05); border: 2px solid #222; border-radius: 10px; transition: 0.3s; }
+        .cb-container input:checked ~ .checkmark { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 20px rgba(99,102,241,0.5); transform: scale(1.1); }
+        .checkmark:after { content: ""; position: absolute; display: none; left: 10px; top: 5px; width: 6px; height: 12px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+        .cb-container input:checked ~ .checkmark:after { display: block; }
+
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(25px); display: none; align-items: center; justify-content: center; z-index: 3000; }
+        .modal { background: rgba(255,255,255,0.95); padding: 45px; border-radius: 40px; text-align: center; color: black; width: 400px; box-shadow: 0 40px 100px rgba(0,0,0,0.5); }
+        .btn-wipe { width: 100%; padding: 18px; background: #ef4444; color: white; border: none; border-radius: 20px; font-weight: 800; cursor: pointer; margin-top: 25px; transition: 0.3s; }
+        .btn-wipe:hover { transform: scale(1.02); background: #dc2626; }
+    </style>
+</head>
+<body>
+    <div id="page-loader"></div>
+    <nav class="float-nav">
+        <a href="index.html">Home</a>
+        <a href="devices.html">Devices</a>
+        <a href="security.html" style="color:white">Security</a>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 style="font-weight:800; font-size:2.5rem; letter-spacing:-2px;">Security Logs</h1>
+            <button style="background:none; border:none; color:#555; cursor:pointer;" onclick="triggerModal()">
+                <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+        </div>
+        <div id="log-list">
+            <div class="log-card"><span>Motion Alert: Hallway</span><label class="cb-container"><input type="checkbox" class="sc-cb" checked><span class="checkmark"></span></label></div>
+            <div class="log-card"><span>Failed Login Attempt</span><label class="cb-container"><input type="checkbox" class="sc-cb" checked><span class="checkmark"></span></label></div>
+            <div class="log-card"><span>Cloud Backup Status</span><label class="cb-container"><input type="checkbox" class="sc-cb"><span class="checkmark"></span></label></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="modal-ov">
+        <div class="modal">
+            <h2 id="modal-count" style="font-size:1.8rem; letter-spacing:-1px;">Clear?</h2>
+            <p style="color:#666; margin-top:10px; font-weight:500;">Deleting logs will refresh the cloud database.</p>
+            <button class="btn-wipe" onclick="confirmWipe()">Clear Selected</button>
+            <button style="background:none; border:none; color:#007aff; margin-top:18px; font-weight:700; cursor:pointer;" onclick="document.getElementById('modal-ov').style.display='none'">Dismiss</button>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', () => document.body.classList.add('loaded'));
+
+        function triggerModal() {
+            const count = document.querySelectorAll('.sc-cb:checked').length;
+            if (count === 0) return alert("Select logs to clear first!");
+            document.getElementById('modal-count').innerText = `Clear ${count} Alert${count > 1 ? 's' : ''}?`;
+            document.getElementById('modal-ov').style.display = 'flex';
+        }
+
+        function confirmWipe() {
+            document.getElementById('modal-ov').style.display = 'none';
+            const targets = document.querySelectorAll('.sc-cb:checked');
+            targets.forEach((cb, i) => {
+                const card = cb.closest('.log-card');
+                setTimeout(() => card.classList.add('slide-out'), i * 150);
+                setTimeout(() => card.remove(), 800 + (i * 150));
+            });
+        }
+    </script>
+</body>
+</html>
